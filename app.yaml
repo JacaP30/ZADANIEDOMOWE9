@@ -22,4 +22,13 @@ services:
   - key: AWS_ENDPOINT_URL_S3
     scope: RUN_TIME
     type: SECRET
+  - key: LANGFUSE_SECRET_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: LANGFUSE_PUBLIC_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: LANGFUSE_HOST
+    scope: RUN_TIME
+    type: SECRET
   http_port: 8501
