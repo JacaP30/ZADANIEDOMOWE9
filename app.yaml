@@ -22,4 +22,4 @@ services:
   - key: AWS_ENDPOINT_URL_S3
     scope: RUN_TIME
     type: SECRET
-  http_port: 8080
+  http_port: 8501
