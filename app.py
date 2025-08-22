@@ -10,6 +10,13 @@ import re
 from datetime import datetime
 import base64
 
+# Langfuse import
+try:
+    from langfuse import Langfuse
+    LANGFUSE_AVAILABLE = True
+except ImportError:
+    LANGFUSE_AVAILABLE = False
+
 
 
 def set_bg(png_file):
@@ -145,6 +152,37 @@ load_dotenv()
 # Konfiguracja OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Konfiguracja Langfuse (opcjonalna)
+langfuse_client = None
+if LANGFUSE_AVAILABLE:
+    try:
+        langfuse_client = Langfuse(
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+            host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+        )
+        print("✅ Langfuse initialized successfully")
+    except Exception as e:
+        print(f"⚠️ Langfuse initialization failed: {e}")
+        langfuse_client = None
+
+
+def log_to_langfuse(function_name, input_data, output_data, metadata=None):
+    """Loguj wywołanie funkcji do Langfuse"""
+    if langfuse_client is None:
+        return
+    
+    try:
+        trace = langfuse_client.trace(
+            name=function_name,
+            input=input_data,
+            output=output_data,
+            metadata=metadata or {}
+        )
+        return trace
+    except Exception as e:
+        print(f"Langfuse logging error: {e}")
+        return None
 
 def load_model():
     """Załaduj wytrenowany model regresji PyCaret"""
@@ -203,6 +241,19 @@ def extract_user_data(user_input):
         # Spróbuj sparsować JSON
         try:
             data = json.loads(result)
+            
+            # Loguj do Langfuse
+            log_to_langfuse(
+                function_name="extract_user_data",
+                input_data={"user_input": user_input},
+                output_data=data,
+                metadata={
+                    "model": "gpt-4",
+                    "temperature": 0.1,
+                    "max_tokens": 200
+                }
+            )
+            
             return data
         except json.JSONDecodeError:
             # Jeśli nie udało się sparsować JSON, zwróć None
@@ -237,6 +288,17 @@ def infer_gender_from_name(name):
         if result:
             result = result.strip().upper()
             if result in ['M', 'K']:
+                # Loguj do Langfuse
+                log_to_langfuse(
+                    function_name="infer_gender_from_name",
+                    input_data={"name": name},
+                    output_data={"gender": result},
+                    metadata={
+                        "model": "gpt-4",
+                        "temperature": 0.1,
+                        "max_tokens": 10
+                    }
+                )
                 return result
         return None
             
@@ -406,6 +468,26 @@ def main():
             predicted_time = predict_half_marathon_time(model, gender, age, time_5k_seconds)
             
             if predicted_time is not None:
+                # Loguj całkowitą predykcję do Langfuse
+                log_to_langfuse(
+                    function_name="half_marathon_prediction",
+                    input_data={
+                        "name": name,
+                        "age": age,
+                        "gender": gender,
+                        "time_5k_minutes": time_5k,
+                        "original_input": user_input
+                    },
+                    output_data={
+                        "predicted_time_seconds": predicted_time,
+                        "predicted_time_formatted": format_time(predicted_time)
+                    },
+                    metadata={
+                        "model_type": "pycaret_regression",
+                        "features": ["Średni Czas na 5 km", "Rocznik", "Płeć_LE"]
+                    }
+                )
+                
                 # Główny wynik
                 # st.markdown("---")
                 predicted_time_formatted = format_time(predicted_time)
