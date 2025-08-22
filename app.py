@@ -10,6 +10,10 @@ import re
 from datetime import datetime
 import base64
 
+from langfuse.decorators import observe
+from langfuse.openai import OpenAI
+
+
 # Langfuse import
 try:
     from langfuse import Langfuse
