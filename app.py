@@ -10,8 +10,8 @@ import re
 from datetime import datetime
 import base64
 
-from langfuse.decorators import observe
 from langfuse.openai import OpenAI
+from langfuse import Langfuse
 
 
 
@@ -149,6 +149,7 @@ load_dotenv()
 openai = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
+
 
 def load_model():
     """Załaduj wytrenowany model regresji PyCaret"""
