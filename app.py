@@ -155,16 +155,31 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # Konfiguracja Langfuse (opcjonalna)
 langfuse_client = None
 if LANGFUSE_AVAILABLE:
-    try:
-        langfuse_client = Langfuse(
-            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-            host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
-        )
-        print("✅ Langfuse initialized successfully")
-    except Exception as e:
-        print(f"⚠️ Langfuse initialization failed: {e}")
-        langfuse_client = None
+    # Sprawdź zmienne środowiskowe
+    secret_key = os.getenv("LANGFUSE_SECRET_KEY")
+    public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+    host = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+    
+    print(f"🔍 Langfuse config check:")
+    print(f"  - SECRET_KEY: {'✅ Set' if secret_key else '❌ Missing'}")
+    print(f"  - PUBLIC_KEY: {'✅ Set' if public_key else '❌ Missing'}")
+    print(f"  - HOST: {host}")
+    
+    if secret_key and public_key:
+        try:
+            langfuse_client = Langfuse(
+                secret_key=secret_key,
+                public_key=public_key,
+                host=host
+            )
+            print("✅ Langfuse initialized successfully")
+        except Exception as e:
+            print(f"⚠️ Langfuse initialization failed: {e}")
+            langfuse_client = None
+    else:
+        print("⚠️ Langfuse keys missing - skipping initialization")
+else:
+    print("⚠️ Langfuse not available - library not installed")
 
 
 def log_to_langfuse(function_name, input_data, output_data, metadata=None):
@@ -179,6 +194,8 @@ def log_to_langfuse(function_name, input_data, output_data, metadata=None):
             output=output_data,
             metadata=metadata or {}
         )
+        # Flush natychmiast aby dane zostały wysłane
+        langfuse_client.flush()
         return trace
     except Exception as e:
         print(f"Langfuse logging error: {e}")
