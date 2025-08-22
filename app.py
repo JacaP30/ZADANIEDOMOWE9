@@ -387,7 +387,7 @@ def main():
         user_input = st.text_area(
             "## **Wpisz informacje o sobie:**",
             height=100,
-            placeholder="Napisz coś o sobie... np. Jestem Anna, mam 28 lat i biegam 5km w 24 minuty",
+            placeholder="Napisz coś o sobie... ",
             help="Podaj swoje dane w dowolnej formie - AI wyciągnie potrzebne informacje"
         )
         
