@@ -201,26 +201,24 @@ def log_to_langfuse(function_name, input_data, output_data, metadata=None):
         return
     
     try:
-        # Langfuse 2.51.4 używa create_event() i create_trace_id()
-        trace_id = langfuse_client.create_trace_id()
-        
-        # Loguj jako event z trace_id
-        event = langfuse_client.create_event(
-            trace_id=trace_id,
+        # Langfuse 2.51.4 ma metodę event() (nie create_event)
+        event = langfuse_client.event(
             name=function_name,
             input=input_data,
             output=output_data,
             metadata={
                 **(metadata or {}),
                 "function": function_name,
-                "model": "gpt-4" if "extract" in function_name or "infer" in function_name else "ml-model"
+                "model": "gpt-4" if "extract" in function_name or "infer" in function_name else "ml-model",
+                "app": "half_marathon_predictor"
             }
         )
         
-        print(f"✅ Logged to Langfuse: {function_name} (trace_id: {trace_id})")
+        print(f"✅ Logged to Langfuse: {function_name}")
         
         # Flush natychmiast
-        langfuse_client.flush()
+        if hasattr(langfuse_client, 'flush'):
+            langfuse_client.flush()
         
         return event
         
