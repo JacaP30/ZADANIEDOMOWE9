@@ -359,9 +359,9 @@ def main():
     - **Imię**,  **Wiek**,  **Czas na 5km**,  **Płeć** (jeśli chcesz)
     
     💡 **Przykłady:**
-    - "Jestem Anna, mam 28 lat i biegam 5km w 24 minuty"
-    - "Marek, 35 lat, czas na 5km: 22:45"
     - "Nazywam się Kasia, urodziłam się w 1990 roku, 5km w 26.5 minuty"
+    - "Jestem Anna, mam 28 lat i biegam 5km w 24 minuty"
+    - "Marek, 35 lat, czas na 5km: 22:45"    
     - Możesz też po prostu "Janek 75 25"  :)
     """)
     
