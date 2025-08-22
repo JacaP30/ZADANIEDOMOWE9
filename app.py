@@ -1,5 +1,5 @@
 import streamlit as st
-# import openai
+import openai
 import pandas as pd
 import numpy as np
 import pickle
@@ -9,9 +9,6 @@ from dotenv import load_dotenv
 import re
 from datetime import datetime
 import base64
-
-from langfuse.openai import OpenAI
-from langfuse import Langfuse
 
 
 
@@ -145,10 +142,8 @@ set_bg("images/background.png")# import matplotlib.patheffects
 # Załaduj zmienne środowiskowe
 load_dotenv()
 
-# Konfiguracja OpenAI z Langfuse
-openai = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+# Konfiguracja OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 def load_model():
@@ -164,7 +159,6 @@ def load_model():
         st.error(f"Błąd podczas ładowania modelu: {e}")
         return None
 
-@observe()
 def extract_user_data(user_input):
     """Wyciągnij wszystkie dane użytkownika z tekstu używając AI"""
     try:
@@ -218,7 +212,6 @@ def extract_user_data(user_input):
         st.error(f"Błąd podczas komunikacji z AI: {e}")
         return None
 
-@observe()
 def infer_gender_from_name(name):
     """Wywnioskuj płeć na podstawie imienia używając AI"""
     try:
