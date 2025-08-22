@@ -14,12 +14,20 @@ import base64
 # from langfuse.openai import OpenAI
 
 
-# Langfuse import
+# Langfuse import - decorator approach
 try:
-    from langfuse import Langfuse
+    from langfuse.decorators import observe
+    from langfuse.openai import OpenAI
     LANGFUSE_AVAILABLE = True
+    USE_LANGFUSE_OPENAI = True
 except ImportError:
-    LANGFUSE_AVAILABLE = False
+    try:
+        from langfuse import Langfuse
+        LANGFUSE_AVAILABLE = True
+        USE_LANGFUSE_OPENAI = False
+    except ImportError:
+        LANGFUSE_AVAILABLE = False
+        USE_LANGFUSE_OPENAI = False
 
 
 
@@ -153,8 +161,17 @@ set_bg("images/background.png")# import matplotlib.patheffects
 # Załaduj zmienne środowiskowe
 load_dotenv()
 
-# Konfiguracja OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Konfiguracja OpenAI z Langfuse
+if USE_LANGFUSE_OPENAI:
+    # Użyj Langfuse OpenAI wrapper dla automatycznego trackingu
+    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    print("✅ Using Langfuse OpenAI wrapper")
+else:
+    # Standard OpenAI
+    import openai
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    openai_client = openai
+    print("⚠️ Using standard OpenAI")
 
 # Konfiguracja Langfuse (opcjonalna)
 langfuse_client = None
@@ -243,10 +260,11 @@ def load_model():
         st.error(f"Błąd podczas ładowania modelu: {e}")
         return None
 
+@observe()
 def extract_user_data(user_input):
     """Wyciągnij wszystkie dane użytkownika z tekstu używając AI"""
     try:
-        response = openai.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {
@@ -287,19 +305,6 @@ def extract_user_data(user_input):
         # Spróbuj sparsować JSON
         try:
             data = json.loads(result)
-            
-            # Loguj do Langfuse
-            log_to_langfuse(
-                function_name="extract_user_data",
-                input_data={"user_input": user_input},
-                output_data=data,
-                metadata={
-                    "model": "gpt-4",
-                    "temperature": 0.1,
-                    "max_tokens": 200
-                }
-            )
-            
             return data
         except json.JSONDecodeError:
             # Jeśli nie udało się sparsować JSON, zwróć None
@@ -309,10 +314,11 @@ def extract_user_data(user_input):
         st.error(f"Błąd podczas komunikacji z AI: {e}")
         return None
 
+@observe()
 def infer_gender_from_name(name):
     """Wywnioskuj płeć na podstawie imienia używając AI"""
     try:
-        response = openai.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {
@@ -334,17 +340,6 @@ def infer_gender_from_name(name):
         if result:
             result = result.strip().upper()
             if result in ['M', 'K']:
-                # Loguj do Langfuse
-                log_to_langfuse(
-                    function_name="infer_gender_from_name",
-                    input_data={"name": name},
-                    output_data={"gender": result},
-                    metadata={
-                        "model": "gpt-4",
-                        "temperature": 0.1,
-                        "max_tokens": 10
-                    }
-                )
                 return result
         return None
             
@@ -512,26 +507,6 @@ def main():
             predicted_time = predict_half_marathon_time(model, gender, age, time_5k_seconds)
             
             if predicted_time is not None:
-                # Loguj całkowitą predykcję do Langfuse
-                log_to_langfuse(
-                    function_name="half_marathon_prediction",
-                    input_data={
-                        "name": name,
-                        "age": age,
-                        "gender": gender,
-                        "time_5k_minutes": time_5k,
-                        "original_input": user_input
-                    },
-                    output_data={
-                        "predicted_time_seconds": predicted_time,
-                        "predicted_time_formatted": format_time(predicted_time)
-                    },
-                    metadata={
-                        "model_type": "pycaret_regression",
-                        "features": ["Średni Czas na 5 km", "Rocznik", "Płeć_LE"]
-                    }
-                )
-                
                 # Główny wynik
                 # st.markdown("---")
                 predicted_time_formatted = format_time(predicted_time)
