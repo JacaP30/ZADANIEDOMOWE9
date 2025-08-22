@@ -177,6 +177,15 @@ if LANGFUSE_AVAILABLE:
                 host=host
             )
             print("✅ Langfuse initialized successfully")
+            
+            # Wyświetl dostępne metody do debugowania
+            available_methods = [method for method in dir(langfuse_client) if not method.startswith('_') and callable(getattr(langfuse_client, method))]
+            print(f"🔧 Available methods: {', '.join(available_methods[:10])}")  # Pierwsze 10
+            
+            # Sprawdź wersję jeśli dostępna
+            if hasattr(langfuse_client, '__version__'):
+                print(f"📦 Langfuse version: {langfuse_client.__version__}")
+                
         except Exception as e:
             print(f"⚠️ Langfuse initialization failed: {e}")
             langfuse_client = None
@@ -187,22 +196,51 @@ else:
 
 
 def log_to_langfuse(function_name, input_data, output_data, metadata=None):
-    """Loguj wywołanie funkcji do Langfuse"""
+    """Loguj wywołanie funkcji do Langfuse 2.0+"""
     if langfuse_client is None:
         return
     
     try:
-        trace = langfuse_client.trace(
+        # Langfuse 2.0+ - prawidłowe API
+        # Użyj trace jako kontekstu, potem generation
+        trace = langfuse_client.trace(name=f"app_session_{function_name}")
+        
+        # Dodaj generation do trace
+        generation = trace.generation(
             name=function_name,
             input=input_data,
             output=output_data,
-            metadata=metadata or {}
+            metadata=metadata or {},
+            model="gpt-4" if "extract" in function_name or "infer" in function_name else "ml-model"
         )
-        # Flush natychmiast aby dane zostały wysłane
+        
+        print(f"✅ Logged to Langfuse: {function_name}")
+        
+        # Flush natychmiast
         langfuse_client.flush()
-        return trace
+        
+        return generation
+        
+    except AttributeError as e:
+        # Jeśli nie ma trace, spróbuj bezpośrednio generation
+        try:
+            generation = langfuse_client.generation(
+                name=function_name,
+                input=input_data,
+                output=output_data,
+                metadata=metadata or {}
+            )
+            langfuse_client.flush()
+            print(f"✅ Direct generation logged: {function_name}")
+            return generation
+        except Exception as e2:
+            print(f"❌ Both methods failed:")
+            print(f"  - trace() error: {e}")
+            print(f"  - generation() error: {e2}")
+            return None
     except Exception as e:
         print(f"Langfuse logging error: {e}")
+        print(f"Available methods: {[method for method in dir(langfuse_client) if not method.startswith('_') and callable(getattr(langfuse_client, method))][:8]}")
         return None
 
 def load_model():
