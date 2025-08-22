@@ -37,7 +37,7 @@ def set_bg(png_file):
         background-color: rgba(255, 255, 255, 0.95);
         padding: 2rem;
         border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(10px);
         margin-top: 1rem;
     }}
@@ -52,7 +52,7 @@ def set_bg(png_file):
     /* Style dla zwykłego tekstu */
     p, div, span {{
         color: #1f2937 !important;
-        text-shadow: 2px 1px 1px rgba(255, 255, 255, 0.8);
+        text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8);
     }}
     
     /* Style dla formularzy */
@@ -120,12 +120,7 @@ def set_bg(png_file):
         color: #1f2937 !important;
         border-radius: 8px !important;
         backdrop-filter: blur(5px) !important;
-    }}
     
-    /* Style dla sidebar (jeśli używany) */
-    .css-1d391kg {{
-        background-color: rgba(255, 255, 255, 0.95) !important;
-        backdrop-filter: blur(10px) !important;
     }}
     
     /* Style dla stopki */
@@ -465,7 +460,7 @@ def main():
                 st.success("💪 Powodzenia w treningu! Pamiętaj, że regularne treningi są kluczem do sukcesu.")
                 
                 # Opcja ponownej analizy
-                st.markdown("---")
+                #st.markdown("---")
                 if st.button("🔄 Analizuj inne dane"):
                     st.rerun()
 
