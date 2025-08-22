@@ -10,14 +10,12 @@ from dotenv import load_dotenv
 from datetime import datetime
 import base64
 
-# from langfuse.decorators import observe
-# from langfuse.openai import OpenAI
-
 
 # Langfuse import - decorator approach
 try:
     from langfuse.decorators import observe
     from langfuse.openai import OpenAI
+    from langfuse import Langfuse  # Dodajemy dla inicjalizacji klienta
     LANGFUSE_AVAILABLE = True
     USE_LANGFUSE_OPENAI = True
 except ImportError:
@@ -260,7 +258,7 @@ def load_model():
         st.error(f"Błąd podczas ładowania modelu: {e}")
         return None
 
-@observe()
+@observe(name="extract_user_data")
 def extract_user_data(user_input):
     """Wyciągnij wszystkie dane użytkownika z tekstu używając AI"""
     try:
@@ -314,7 +312,7 @@ def extract_user_data(user_input):
         st.error(f"Błąd podczas komunikacji z AI: {e}")
         return None
 
-@observe()
+@observe(name="infer_gender_from_name") 
 def infer_gender_from_name(name):
     """Wywnioskuj płeć na podstawie imienia używając AI"""
     try:
