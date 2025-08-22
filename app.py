@@ -356,21 +356,19 @@ def main():
     # Instrukcje dla użytkownika
     st.info("""
     📝 **Podaj następujące informacje w dowolnej formie:**
-    - **Imię** (np. Anna, Marek)
-    - **Wiek** lub rok urodzenia (np. "mam 30 lat" lub "urodziłem się w 1993")
-    - **Płeć** (opcjonalnie - mogę wywnioskować z imienia)
-    - **Czas na 5km** (np. "25 minut", "25:30", "25.5 min")
+    - **Imię**,  **Wiek**,  **Czas na 5km**,  **Płeć** (jeśli chcesz)
     
     💡 **Przykłady:**
     - "Jestem Anna, mam 28 lat i biegam 5km w 24 minuty"
     - "Marek, 35 lat, czas na 5km: 22:45"
     - "Nazywam się Kasia, urodziłam się w 1990 roku, 5km w 26.5 minuty"
+    - Możesz też po prostu "Janek 75 25"  :)
     """)
     
     # Formularz dla użytkownika
     with st.form("user_data_form"):
         user_input = st.text_area(
-            "Wpisz informacje o sobie:",
+            "## **Wpisz informacje o sobie:**",
             height=100,
             placeholder="Napisz coś o sobie... np. Jestem Anna, mam 28 lat i biegam 5km w 24 minuty",
             help="Podaj swoje dane w dowolnej formie - AI wyciągnie potrzebne informacje"
