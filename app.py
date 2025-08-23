@@ -153,7 +153,7 @@ def set_bg(png_file):
     st.markdown(css, unsafe_allow_html=True)
 
 # Użycie:
-set_bg("images/background.png")# import matplotlib.patheffects
+set_bg("images/background.png")
 
 
 # Załaduj zmienne środowiskowe
