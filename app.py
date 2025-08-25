@@ -1,17 +1,12 @@
 import streamlit as st
 import openai
 import pandas as pd
-# import numpy as np
-# import pickle
 import os
 import json
 from dotenv import load_dotenv
-# import re
 from datetime import datetime
 import base64
 
-
-# Langfuse import - decorator approach
 try:
     from langfuse.decorators import observe
     from langfuse.openai import OpenAI
@@ -162,7 +157,7 @@ load_dotenv()
 # Konfiguracja OpenAI z Langfuse
 if USE_LANGFUSE_OPENAI:
     # Użyj Langfuse OpenAI wrapper dla automatycznego trackingu
-    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) # type: ignore
     print("✅ Using Langfuse OpenAI wrapper")
 else:
     # Standard OpenAI
@@ -186,7 +181,7 @@ if LANGFUSE_AVAILABLE:
     
     if secret_key and public_key:
         try:
-            langfuse_client = Langfuse(
+            langfuse_client = Langfuse( # type: ignore
                 secret_key=secret_key,
                 public_key=public_key,
                 host=host
@@ -199,7 +194,7 @@ if LANGFUSE_AVAILABLE:
             
             # Sprawdź wersję jeśli dostępna
             if hasattr(langfuse_client, '__version__'):
-                print(f"📦 Langfuse version: {langfuse_client.__version__}")
+                print(f"📦 Langfuse version: {langfuse_client.__version__}") # type: ignore
                 
         except Exception as e:
             print(f"⚠️ Langfuse initialization failed: {e}")
@@ -258,7 +253,7 @@ def load_model():
         st.error(f"Błąd podczas ładowania modelu: {e}")
         return None
 
-@observe(name="extract_user_data")
+@observe(name="extract_user_data") # type: ignore
 def extract_user_data(user_input):
     """Wyciągnij wszystkie dane użytkownika z tekstu używając AI"""
     try:
@@ -312,7 +307,7 @@ def extract_user_data(user_input):
         st.error(f"Błąd podczas komunikacji z AI: {e}")
         return None
 
-@observe(name="infer_gender_from_name") 
+@observe(name="infer_gender_from_name")  # type: ignore
 def infer_gender_from_name(name):
     """Wywnioskuj płeć na podstawie imienia używając AI"""
     try:
@@ -390,7 +385,7 @@ def main():
     if model is None:
         st.stop()
     
-    st.markdown("### Opowiedz o sobie:")
+    st.markdown("### Opowiedz o sobie żeby uzyskać prawdopodobny czas ukończenia pułmaratonu:")
     
     # Instrukcje dla użytkownika
     st.info("""
@@ -398,10 +393,10 @@ def main():
     - **Imię**,  **Wiek**,  **Czas na 5km**,  **Płeć** (jeśli chcesz)
     
     💡 **Przykłady:**
-    - "Nazywam się Kasia, urodziłam się w 1990 roku, 5km w 26.5 minuty"
-    - "Jestem Anna, mam 28 lat i biegam 5km w 24 minuty"
-    - "Marek, 35 lat, czas na 5km: 22:45"    
-    - Możesz też po prostu "Janek 75 25"  :)
+    - "Nazywam się Kasia, urodziłam się w 1990 roku, biegam 5 km w 26.5 minuty"
+    - "Jestem Anna, mam 28 lat i biegam 5 km w 24 minuty"
+    - "Marek, 35 lat, czas na 5km: 22:45"
+    - Możesz też po prostu "Janek 75 25"  😉
     """)
     
     # Formularz dla użytkownika
@@ -495,8 +490,7 @@ def main():
             st.stop()
         
         # Predykcja
-        # st.markdown("---")
-        with st.spinner("🏃‍♂️ Przewidywanie czasu półmaratonu..."):
+        with st.spinner("Przewidywanie czasu półmaratonu..."):
             
             # Konwersja czasu 5km na sekundy
             time_5k_seconds = time_5k * 60
@@ -506,7 +500,6 @@ def main():
             
             if predicted_time is not None:
                 # Główny wynik
-                # st.markdown("---")
                 predicted_time_formatted = format_time(predicted_time)
                 
                 st.markdown(f"""
@@ -530,7 +523,7 @@ def main():
                         color: #1B5E20 !important; 
                         font-size: 3.5em; 
                         margin: 10px 0;
-                        text-shadow: 3px 3px 6px rgba(255, 255, 255, 0.9);
+                        text-shadow: 3px 2px 6px rgba(55, 255, 55, 0.9);
                         font-weight: bold;
                         letter-spacing: 2px;
                     ">{predicted_time_formatted}</h1>
@@ -538,7 +531,6 @@ def main():
                 """, unsafe_allow_html=True)
                 
                 # Dodatkowe informacje
-                # st.markdown("---")
                 st.markdown("### 📊 Analiza:")
                 
                 # Oblicz tempo na km dla półmaratonu
