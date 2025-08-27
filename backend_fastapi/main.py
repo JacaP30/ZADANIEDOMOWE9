@@ -169,7 +169,7 @@ async def analyze(user_text: UserText):
     if missing:
         return {"error": f"Brakuje/niepoprawne: {', '.join(missing)}", "data": extracted_data}
 
-    time_5k_seconds = float(time_5k_minutes) * 60.0
+    time_5k_seconds = float(time_5k_minutes) * 60.0 # type: ignore
     predicted_time = predict_half_marathon_time(model, gender, int(age), time_5k_seconds)
     predicted_time_formatted = format_time(predicted_time)
 
@@ -178,7 +178,7 @@ async def analyze(user_text: UserText):
         "age": int(age),
         "birth_year": int(birth_year) if birth_year else (datetime.now().year - int(age)),
         "gender": gender,
-        "time_5k": float(time_5k_minutes),
+        "time_5k": float(time_5k_minutes), # type: ignore
         "predicted_time_seconds": predicted_time,
         "predicted_time_formatted": predicted_time_formatted,
     }
