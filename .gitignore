@@ -3,5 +3,6 @@ logs.log
 halfmarathon_wroclaw_2023__final.csv
 halfmarathon_wroclaw_2024__final.csv
 data/
+venv/
 mapa.md
 zad_dom_9.ipynb
