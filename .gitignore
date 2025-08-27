@@ -28,7 +28,8 @@ logs.log
 halfmarathon_wroclaw_2023__final.csv
 halfmarathon_wroclaw_2024__final.csv
 data/
+venv/
 mapa.md
 zad_dom_9.ipynb
-zadania_domowe\predyktor_react\backend_fastapi\.env
-zadania_domowe\predyktor_react\.env
+zadania_domowe/predyktor_react/backend_fastapi/.env
+zadania_domowe/predyktor_react/.env
