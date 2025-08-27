@@ -473,7 +473,7 @@ def main():
             else:
                 st.error("**Czas 5km:** nie rozpoznano")
         
-        # Sprawdź czy mamy wszystkie potrzebne dane
+        # Sprawdź czy mamy wszystkie potrzebne dan
         missing_data = []
         if not name:
             missing_data.append("imię")
