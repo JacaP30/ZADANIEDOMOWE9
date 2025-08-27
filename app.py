@@ -558,4 +558,6 @@ def main():
                     st.rerun()
 
 if __name__ == "__main__":
+    # Konfiguracja dla Digital Ocean
+    port = int(os.environ.get("PORT", 8501))
     main()
