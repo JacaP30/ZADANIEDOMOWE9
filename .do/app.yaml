@@ -6,12 +6,12 @@ services:
     environment_slug: python
     instance_count: 1
     instance_size_slug: basic-xxs
-    http_port: 8080
+    http_port: 8501
     routes:
       - path: /
     health_check:
       http_path: /
-      port: 8080
+      port: 8501
       initial_delay_seconds: 60
       period_seconds: 10
       timeout_seconds: 5
@@ -19,4 +19,4 @@ services:
       failure_threshold: 3
     envs:
       - key: PORT
-        value: "8080"
+        value: "8501"
