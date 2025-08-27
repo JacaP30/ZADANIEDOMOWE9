@@ -5,4 +5,6 @@ halfmarathon_wroclaw_2024__final.csv
 data/
 mapa.md
 zad_dom_9.ipynb
-node_modules
+node_modules/
+backend_fastapi/
+build/
