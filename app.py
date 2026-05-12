@@ -9,7 +9,7 @@ import base64
 
 try:
     from langfuse.decorators import observe
-    from langfuse.openai import OpenAI
+    from langfuse.openai import OpenAI as LangfuseOpenAI
     from langfuse import Langfuse  # Dodajemy dla inicjalizacji klienta
     LANGFUSE_AVAILABLE = True
     USE_LANGFUSE_OPENAI = True
@@ -21,6 +21,14 @@ except ImportError:
     except ImportError:
         LANGFUSE_AVAILABLE = False
         USE_LANGFUSE_OPENAI = False
+
+if "observe" not in globals():
+
+    def observe(**_kwargs):
+        def _decorator(fn):
+            return fn
+
+        return _decorator
 
 
 
@@ -154,17 +162,145 @@ set_bg("images/background.png")
 # Załaduj zmienne środowiskowe
 load_dotenv()
 
-# Konfiguracja OpenAI z Langfuse
-if USE_LANGFUSE_OPENAI:
-    # Użyj Langfuse OpenAI wrapper dla automatycznego trackingu
-    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) # type: ignore
-    print("✅ Using Langfuse OpenAI wrapper")
-else:
-    # Standard OpenAI
-    import openai
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    openai_client = openai
-    print("⚠️ Using standard OpenAI")
+
+def _read_streamlit_secret_openai_key() -> str | None:
+    try:
+        s = st.secrets.get("OPENAI_API_KEY", "")  # type: ignore[attr-defined]
+        if s:
+            return str(s).strip() or None
+    except Exception:
+        pass
+    return None
+
+
+def get_env_openai_key() -> str | None:
+    k = (os.getenv("OPENAI_API_KEY") or "").strip()
+    return k or None
+
+
+def validate_openai_api_key(api_key: str) -> tuple[bool, str]:
+    """Sprawdza format i wywołuje lekkie żądanie do API OpenAI (lista modeli)."""
+    key = (api_key or "").strip()
+    if not key:
+        return False, "Klucz API nie może być pusty."
+    if not key.startswith("sk-"):
+        return False, 'Klucz OpenAI powinien zaczynać się od prefiksu "sk-".'
+    try:
+        from openai import OpenAI as OpenAIKeyCheck
+
+        client = OpenAIKeyCheck(api_key=key)
+        client.models.list()
+        return True, ""
+    except Exception as e:
+        msg = str(e).strip() or repr(e)
+        return False, f"Klucz nie został zaakceptowany przez OpenAI: {msg}"
+
+
+def build_openai_client(api_key: str):
+    """Tworzy klienta chat completions (wrapper Langfuse lub standardowy OpenAI)."""
+    if USE_LANGFUSE_OPENAI:
+        return LangfuseOpenAI(api_key=api_key)  # type: ignore[misc]
+    openai.api_key = api_key
+    return openai
+
+
+def get_openai_client_from_session():
+    """Klient OpenAI na podstawie zwalidowanego klucza w sesji (None w trybie demo)."""
+    if st.session_state.get("demo_mode"):
+        return None
+    key = st.session_state.get("openai_api_key")
+    if not key:
+        return None
+    cache_key = "_openai_client_for_key"
+    if st.session_state.get(cache_key) == key and "_openai_client_obj" in st.session_state:
+        return st.session_state["_openai_client_obj"]
+    client = build_openai_client(key)
+    st.session_state[cache_key] = key
+    st.session_state["_openai_client_obj"] = client
+    return client
+
+
+def render_api_setup_gate():
+    """
+    Jeśli brak trybu demo i brak poprawnego klucza — pokaż ekran startowy.
+    Klucz z .env / secrets walidujemy przy pierwszym wejściu.
+    """
+    if st.session_state.get("demo_mode"):
+        return
+    if st.session_state.get("openai_api_key"):
+        return
+
+    env_key = get_env_openai_key()
+    secret_key = _read_streamlit_secret_openai_key()
+    auto_key = env_key or secret_key
+    if auto_key:
+        if st.session_state.get("_env_key_validated") == auto_key:
+            st.session_state["openai_api_key"] = auto_key
+            return
+        if st.session_state.get("_env_key_invalid") == auto_key:
+            st.info(
+                "Klucz z pliku `.env` / zmiennych środowiska lub Streamlit Secrets "
+                "wcześniej nie przeszedł walidacji — wprowadź poprawny klucz poniżej lub wybierz tryb demo."
+            )
+        else:
+            ok, err = validate_openai_api_key(auto_key)
+            if ok:
+                st.session_state["openai_api_key"] = auto_key
+                st.session_state["_env_key_validated"] = auto_key
+                st.session_state.pop("_env_key_invalid", None)
+                return
+            st.error(
+                "Zmienna OPENAI_API_KEY (lub klucz w Streamlit Secrets) jest ustawiona, "
+                f"ale walidacja nie powiodła się: {err}"
+            )
+            st.session_state["_env_key_invalid"] = auto_key
+
+    st.title("Konfiguracja OpenAI")
+    st.markdown(
+        "Aby korzystać z analizy tekstu przez AI, potrzebny jest klucz API OpenAI. "
+        "Możesz też włączyć **tryb demo** i obejrzeć interfejs bez wywołań API."
+    )
+    choice = st.radio(
+        "Wybierz opcję",
+        ("Wprowadzę klucz API OpenAI", "Tryb demo (bez API)"),
+        horizontal=True,
+    )
+
+    if choice.startswith("Tryb demo"):
+        if st.button("Uruchom w trybie demo", type="primary", use_container_width=True):
+            st.session_state["demo_mode"] = True
+            st.session_state["openai_api_key"] = None
+            st.rerun()
+        st.stop()
+
+    key_in = st.text_input(
+        "Klucz API OpenAI",
+        type="password",
+        help="Klucz zaczyna się zwykle od sk-; nie jest zapisywany na dysku, tylko w pamięci sesji przeglądarki.",
+    )
+    col_a, col_b = st.columns(2)
+    with col_a:
+        validate_clicked = st.button("Sprawdź klucz i kontynuuj", type="primary", use_container_width=True)
+    with col_b:
+        if st.button("Tryb demo", use_container_width=True):
+            st.session_state["demo_mode"] = True
+            st.session_state["openai_api_key"] = None
+            st.rerun()
+
+    if validate_clicked:
+        ok, err = validate_openai_api_key(key_in)
+        if ok:
+            st.session_state["openai_api_key"] = key_in.strip()
+            st.session_state["demo_mode"] = False
+            st.session_state.pop("_openai_client_obj", None)
+            st.session_state.pop("_openai_client_for_key", None)
+            st.session_state.pop("_env_key_invalid", None)
+            st.success("Klucz poprawny. Ładowanie aplikacji…")
+            st.rerun()
+        else:
+            st.error(err)
+
+    st.stop()
 
 # Konfiguracja Langfuse (opcjonalna)
 langfuse_client = None
@@ -256,6 +392,10 @@ def load_model():
 @observe(name="extract_user_data") # type: ignore
 def extract_user_data(user_input):
     """Wyciągnij wszystkie dane użytkownika z tekstu używając AI"""
+    openai_client = get_openai_client_from_session()
+    if openai_client is None:
+        st.error("Analiza AI jest niedostępna (brak klucza API lub tryb demo).")
+        return None
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4",
@@ -310,6 +450,10 @@ def extract_user_data(user_input):
 @observe(name="infer_gender_from_name")  # type: ignore
 def infer_gender_from_name(name):
     """Wywnioskuj płeć na podstawie imienia używając AI"""
+    openai_client = get_openai_client_from_session()
+    if openai_client is None:
+        st.error("Rozpoznawanie płci przez AI jest niedostępne (brak klucza API lub tryb demo).")
+        return None
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4",
@@ -377,6 +521,28 @@ def format_time(seconds):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 def main():
+    if "demo_mode" not in st.session_state:
+        st.session_state.demo_mode = False
+
+    render_api_setup_gate()
+
+    with st.sidebar:
+        mode_label = "Tryb demo (bez API)" if st.session_state.get("demo_mode") else "Tryb z kluczem OpenAI"
+        st.caption(f"Aktywny: **{mode_label}**")
+        if st.button("Zmień klucz API / tryb startowy", use_container_width=True):
+            keys_to_clear = (
+                "demo_mode",
+                "openai_api_key",
+                "_env_key_validated",
+                "_env_key_invalid",
+                "_openai_client_obj",
+                "_openai_client_for_key",
+            )
+            for k in keys_to_clear:
+                st.session_state.pop(k, None)
+            st.session_state.demo_mode = False
+            st.rerun()
+
     st.title("Predyktor Czasu Półmaratonu")
     # st.markdown("---")
     
@@ -384,6 +550,13 @@ def main():
     model = load_model()
     if model is None:
         st.stop()
+
+    if st.session_state.get("demo_mode"):
+        st.warning(
+            "Jesteś w **trybie demo**: możesz przeglądać opis i formularz, "
+            "ale analiza tekstu przez AI i predykcja na tej podstawie są wyłączone. "
+            "Wybierz „Zmień klucz API / tryb startowy” na pasku bocznym i wprowadź klucz OpenAI, aby w pełni korzystać z aplikacji."
+        )
     
     st.markdown("### Opowiedz o sobie żeby uzyskać prawdopodobny czas ukończenia pułmaratonu:")
     
@@ -400,17 +573,28 @@ def main():
     """)
     
     # Formularz dla użytkownika
+    demo = st.session_state.get("demo_mode", False)
     with st.form("user_data_form"):
         user_input = st.text_area(
             "## **Wpisz informacje o sobie:**",
             height=100,
             placeholder="Napisz coś o sobie... ",
             help="Podaj swoje dane w dowolnej formie - AI wyciągnie potrzebne informacje"
+            if not demo
+            else "W trybie demo pole jest tylko do podglądu — bez klucza API analiza nie zostanie uruchomiona.",
+            disabled=demo,
         )
-        
-        submitted = st.form_submit_button("🔍 Analizuj i przewiduj czas półmaratonu", use_container_width=True)
-    
+
+        submitted = st.form_submit_button(
+            "🔍 Analizuj i przewiduj czas półmaratonu",
+            use_container_width=True,
+            disabled=demo,
+        )
+
     if submitted:
+        if demo:
+            st.info("W trybie demo przycisk analizy jest wyłączony. Dodaj klucz OpenAI w konfiguracji startowej.")
+            st.stop()
         if not user_input.strip():
             st.error("Proszę podać informacje o sobie!")
             st.stop()
